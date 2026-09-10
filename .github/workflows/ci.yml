@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-metadata:
+    name: Validate PR metadata
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    # Ensures branches follow the naming convention using regular expressions.
+    steps:
+      - name: Validate branch name
+        shell: bash
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          if [[ ! "$BRANCH_NAME" =~ ^tickets/[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo "Invalid branch name: $BRANCH_NAME"
+            echo "Expected format: tickets/<number>-<description>"
+            echo "Example: tickets/3-create-readme"
+            exit 1
+          fi
+
+  validate-python:
+    name: Validate Python
+    runs-on: ubuntu-latest
+
+    # Uncomment to run python validation on only a specific directory.
+    #defaults:
+    #  run:
+    #    working-directory: prediction
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Install Python test and quality tools
+        run: python -m pip install pytest ruff
+
+      - name: Run Python tests
+        run: python -m pytest
+
+      - name: Run Ruff linting
+        run: ruff check .
+
+      - name: Check Ruff formatting
+        run: ruff format --check .
