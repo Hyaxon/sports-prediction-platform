@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+    push:
+      branches:
+        - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-metadata:
+    name: Validate PR metadata
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate branch name
+        shell: bash
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          if {{ ! "$BRANCH_NAME" =~ ^tickets/[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo "Invalid branch name: $BRANCH_NAME"
+            echo "Expected format: tickets/<number>-<description>"
+            echo "Example: tickets/3-create-readme"
+            exit 1
+          fi
